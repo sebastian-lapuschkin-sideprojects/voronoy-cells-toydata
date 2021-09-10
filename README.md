@@ -39,7 +39,7 @@ optional arguments:
   --max_centroids MAX_CENTROIDS, -mxc MAX_CENTROIDS
                         maximum number of centroids to be scattered on the canvas.
   --distance_metric DISTANCE_METRIC, -d DISTANCE_METRIC
-                        the distance measure to use for knn. supports naming choices compatible for sklearn.neighbors.DistanceMetric.
+                        the distance measure to use for knn. supports naming choices compatible for (argument-less) sklearn.neighbors.DistanceMetric.
   --class_colors [CLASS_COLORS [CLASS_COLORS ...]], -cc [CLASS_COLORS [CLASS_COLORS ...]]
                         the colors for labelled classes as rgb hex strings. multiple namings possible. each color adds a class.
   --class_color_deviation CLASS_COLOR_DEVIATION, -ccd CLASS_COLOR_DEVIATION

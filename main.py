@@ -21,7 +21,7 @@ parser.add_argument('--size', '-s', type=int, default=50, help='canvas size for 
 parser.add_argument('--number','-n', type=int, default=10, help='number of samples to be generated.')
 parser.add_argument('--min_centroids', '-mnc', type=int, default=5, help='minimum number of centroids to be scattered on the canvas.')
 parser.add_argument('--max_centroids', '-mxc', type=int, default=10, help='maximum number of centroids to be scattered on the canvas.')
-parser.add_argument('--distance_metric', '-d', type=str, default='euclidean', help='the distance measure to use for knn. supports naming choices compatible for sklearn.neighbors.DistanceMetric.')
+parser.add_argument('--distance_metric', '-d', type=str, default='euclidean', help='the distance measure to use for knn. supports naming choices compatible for (argument-less) sklearn.neighbors.DistanceMetric.')
 # drawing parameters
 parser.add_argument('--class_colors', '-cc', type=str, nargs='*', default='0xff0000', help='the colors for labelled classes as rgb hex strings. multiple namings possible. each color adds a class.')
 parser.add_argument('--class_color_deviation', '-ccd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in class color.')
