@@ -101,7 +101,7 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
                 canvas[centroids[c,0],centroids[c,1]] = hex2rgb_arr(args.marker_color)
 
 
-    if args.draw_lines: #TODO improve sobel strategy.
+    if args.draw_lines:
         borders = (np.abs(sobel(regions, axis=0)) + np.abs(sobel(regions, axis=1)))  > 0
         npad = args.line_erosion_iterations
         borders = np.pad(borders, ((npad,npad),(npad,npad)), mode='edge') #extend image to avoid information loss during dilation/erosion
@@ -112,16 +112,12 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
 
 
 
-
-
     #store for later
     data.append((canvas, class_area_ground_truth, clazz, count_ground_truth))
 
     if args.show:
         plt.imshow(canvas)
         plt.show()
-
-
 
 
 
