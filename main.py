@@ -128,7 +128,7 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
 # write data
 if not os.path.isdir(args.output): os.makedirs(args.output)
 with open('{}/labels.txt'.format(args.output), 'wt') as f_labels:
-    f_labels.write('# image_id true_class num_regions')
+    f_labels.write('# image_id true_class num_regions\n')
     iname_template = "{:0"+str(len(str(args.number-1)))+"d}"
     for i in tqdm.tqdm(range(len(data)), desc='writing data'):
         iname = iname_template.format(i)
