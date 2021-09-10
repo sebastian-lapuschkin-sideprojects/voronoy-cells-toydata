@@ -28,7 +28,7 @@ parser.add_argument('--class_color_deviation', '-ccd', type=int, default=10, hel
 parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff', help='the colors for "background" tiles. each added color adds to the variation.')
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
-parser.add_argument('--marker_color', '-mc', type=str, default='none', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
+parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
 parser.add_argument('--draw_lines', '-dl', action='store_true', help='draw dividing lines between regions?')
 parser.add_argument('--line_color', '-lc', type=str, default='0x000000', help='color of lines dividing voronoy cells.')
 parser.add_argument('--line_dilation_iterations', '-ldi', type=int, default=0, help='how often to binary dilate region boundaries? dilation is applied before erosion.')
