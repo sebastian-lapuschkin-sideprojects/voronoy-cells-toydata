@@ -1,7 +1,7 @@
 # Voronoy Cell Toy Data Generator
 This is some code which has been written to illustrate an idea in some XAI research context.
 The idea is to draw some simple images with ground truth masks for localization testing.
-Voronoy regions seem like a simple enough yet interesting enough idea.
+Voronoy regions seem like a simple enough yet at the same time interesting enough idea.
 The provided implementations draws parameterizable images of colored regions and produces ground truth labels for region counts, each samples true class, and a binary mask for the true class.
 
 ## Requirements
