@@ -7,12 +7,50 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import sobel
 from scipy.ndimage import binary_erosion
 from scipy.ndimage import binary_dilation
+from scipy.ndimage import gaussian_filter
 from sklearn.neighbors import DistanceMetric
 
 
 def hex2rgb_arr(hexcode):
     rgb_int = int(hexcode,0)
     return np.array([(rgb_int >> 16) & 255, (rgb_int >> 8) & 255, rgb_int & 255], dtype=np.uint8)
+
+def draw_borders(canvas, borders, *args):
+    #args:
+        # 0  - general type of border
+        # 1  - border type parameter
+        # 2: - application parameters
+    print('executing --draw_borders with {}'.format(':'.join(args)))
+    # this is dirty, but it works. for now. oh god is this ugly.
+    if args[0] == 'color':
+        rgb_value = hex2rgb_arr(args[1])
+        if len(args) <= 2 or args[2] == 'flat':
+            canvas[borders] = rgb_value
+
+        elif args[2] == 'gaussian':
+            sigma = 1 if len(args) <= 3 else float(args[3])
+
+            #NOTE: attempt 1: draw "fuzzy borders" with alpha combination on top of region image. not satisfactory.
+            #alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
+            #alpha /= np.max(alpha)
+            #print(alpha[...,None].shape, canvas.shape, rgb_value[None,None,...].shape , rgb_value)
+            #canvas = ((1-alpha)*canvas + (alpha)*rgb_value[None,None,...])
+            #canvas = canvas.astype(np.uint8)
+
+            #NOTE: attempt 2: draw flat borders on canvas, then just apply gaussian blur.
+            canvas[borders] = rgb_value
+            print(canvas.shape)
+            for i in range(3):
+                canvas[...,i] = gaussian_filter(canvas[...,i].astype(np.float32), sigma).astype(np.uint8)
+
+        else:
+            raise NotImplementedError('Unexpected args[2] in "{}"'.format(':'.join(args)))
+    else:
+        raise NotImplementedError('Unexpected args[0] in "{}"'.format(':'.join(args)))
+
+
+    return canvas
+
 
 parser = argparse.ArgumentParser(description='Generate some toy images of colored voronoy cells. Produces ground truth class labels, ground truth true class region masks and region count labels. Also outputs its parameterization for reproducibility.')
 # data generation
@@ -29,8 +67,7 @@ parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
 parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
-parser.add_argument('--draw_lines', '-dl', action='store_true', help='draw dividing lines between regions?')
-parser.add_argument('--line_color', '-lc', type=str, default='0x000000', help='color of lines dividing voronoy cells.')
+parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gauss:stdev" to draw a gaussian-weighted "line"')
 parser.add_argument('--line_dilation_iterations', '-ldi', type=int, default=0, help='how often to binary dilate region boundaries? dilation is applied before erosion.')
 parser.add_argument('--line_erosion_iterations', '-lei', type=int, default=1, help='how often to binary erode region boundaries? erosion is applied after dilation.')
 # visualize while generating?
@@ -80,6 +117,7 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
     class_area_ground_truth = np.zeros((args.size, args.size, 1), dtype=np.uint8)  # for cataloguing the ground truth region for the true class.
     count_ground_truth = centroids.shape[0]
     for c in np.arange(centroids.shape[0]):
+        # TODO: create and refactor out proper "region generator functions"
         if c == k:
             rgb = hex2rgb_arr(args.class_colors[clazz])
             rgb = np.clip(rgb + np.random.normal(0, args.class_color_deviation, rgb.shape), 0, 255).astype(np.uint8)
@@ -101,16 +139,16 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
                 canvas[centroids[c,0],centroids[c,1]] = hex2rgb_arr(args.marker_color)
 
 
-    if args.draw_lines:
+    if not args.draw_borders.lower() == 'none':
         borders = (np.abs(sobel(regions, axis=0)) + np.abs(sobel(regions, axis=1)))  > 0
         npad = args.line_erosion_iterations
-        borders = np.pad(borders, ((npad,npad),(npad,npad)), mode='edge') #extend image to avoid information loss during dilation/erosion
+        borders = np.pad(borders, ((npad,npad),(npad,npad)), mode='edge') # extend image to avoid information loss during dilation/erosion
         if args.line_dilation_iterations > 0: borders = binary_dilation(borders, iterations=args.line_dilation_iterations)
         if args.line_erosion_iterations > 0: borders = binary_erosion(borders, iterations=args.line_erosion_iterations, structure=np.ones((2,2)).astype(borders.dtype)) #structure here prevents in a 1-iteratin setting the complete removal of vertical and horizontal lines
-        borders = borders[npad:-npad,npad:-npad]# undo padding
-        canvas[borders] = hex2rgb_arr(args.line_color)
+        borders = borders[npad:-npad,npad:-npad] # undo padding
 
-
+        # TODO refactor into proper "border generator function"
+        canvas = draw_borders(canvas, borders, *args.draw_borders.split(':'))
 
     #store for later
     data.append((canvas, class_area_ground_truth, clazz, count_ground_truth))
