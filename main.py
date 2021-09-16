@@ -38,10 +38,21 @@ def draw_borders(canvas, borders, *args):
             #canvas = canvas.astype(np.uint8)
 
             #NOTE: attempt 2: draw flat borders on canvas, then just apply gaussian blur.
-            canvas[borders] = rgb_value
+            tmp = canvas
+            tmp[borders] = rgb_value
             print(canvas.shape)
             for i in range(3):
-                canvas[...,i] = gaussian_filter(canvas[...,i].astype(np.float32), sigma).astype(np.uint8)
+                tmp[...,i] = gaussian_filter(tmp[...,i].astype(np.float32), sigma).astype(np.uint8)
+            #canvas = tmp
+
+            #NOTE attempt 3: as attempt 2, but only replace pixels of canvas with stuff from tmp burders can "reach" with their blur. but since this is a lot, fall back to attempt 1 alpha combination
+            alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
+            alpha /= np.max(alpha)
+            canvas = ((1-alpha)*canvas + (alpha)*tmp)
+            canvas = canvas.astype(np.uint8)
+
+            plt.imshow(alpha>0); plt.show()
+
 
         else:
             raise NotImplementedError('Unexpected args[2] in "{}"'.format(':'.join(args)))
