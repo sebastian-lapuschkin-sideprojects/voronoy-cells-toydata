@@ -29,29 +29,18 @@ def draw_borders(canvas, borders, *args):
 
         elif args[2] == 'gaussian':
             sigma = 1 if len(args) <= 3 else float(args[3])
-
-            #NOTE: attempt 1: draw "fuzzy borders" with alpha combination on top of region image. not satisfactory.
-            #alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
-            #alpha /= np.max(alpha)
-            #print(alpha[...,None].shape, canvas.shape, rgb_value[None,None,...].shape , rgb_value)
-            #canvas = ((1-alpha)*canvas + (alpha)*rgb_value[None,None,...])
-            #canvas = canvas.astype(np.uint8)
-
-            #NOTE: attempt 2: draw flat borders on canvas, then just apply gaussian blur.
+            # draw flat borders on canvas, then just apply gaussian blur.
             tmp = canvas
             tmp[borders] = rgb_value
-            print(canvas.shape)
             for i in range(3):
                 tmp[...,i] = gaussian_filter(tmp[...,i].astype(np.float32), sigma).astype(np.uint8)
-            #canvas = tmp
 
-            #NOTE attempt 3: as attempt 2, but only replace pixels of canvas with stuff from tmp burders can "reach" with their blur. but since this is a lot, fall back to attempt 1 alpha combination
+            # re-localize blur effect by using alpha-weighting based on border map between totally blurred image and unblurred original
+            # (ie soft-crop blurred regions by alpha-combining them.)
             alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
             alpha /= np.max(alpha)
             canvas = ((1-alpha)*canvas + (alpha)*tmp)
             canvas = canvas.astype(np.uint8)
-
-            plt.imshow(alpha>0); plt.show()
 
 
         else:
