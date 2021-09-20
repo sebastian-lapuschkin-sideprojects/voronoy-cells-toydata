@@ -1,4 +1,5 @@
 import os
+import copy
 import tqdm
 import copy
 import imageio
@@ -8,8 +9,9 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import sobel
 from scipy.ndimage import binary_erosion
 from scipy.ndimage import binary_dilation
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, uniform_filter
 from sklearn.neighbors import DistanceMetric
+import cv2
 
 
 def hex2rgb_arr(hexcode):
@@ -43,12 +45,40 @@ def draw_borders(canvas, borders, *args):
             one_peak[one_peak.shape[0]//2, one_peak.shape[1]//2] = 1
             one_peak_max = gaussian_filter(one_peak, sigma).max()
 
-            alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
+            alpha = gaussian_filter(borders.astype(np.float32), sigma)[..., None]
             alpha = np.clip(alpha, a_min=0, a_max=one_peak_max)
             alpha /= np.max(alpha)
-            canvas = ((1-alpha)*canvas + (alpha)*tmp)
+            canvas = ((1 - alpha) * canvas + (alpha) * tmp)
             canvas = canvas.astype(np.uint8)
 
+        elif args[2] == 'linear':
+            # build kernel linearly --> sigma is number of pixels
+            sigma = 1 if len(args) <= 3 else float(args[3])
+            alpha = np.zeros(borders.shape)
+            for i in range(borders.shape[0]):
+                for j in range(borders.shape[1]):
+                    if borders[i, j] == 1:
+                        tmp = np.concatenate((np.linspace(0, 1, int(sigma))[:-1], np.linspace(1, 0, int(sigma))), axis=0)
+                        xv, yv = np.meshgrid(tmp, tmp)
+                        kernel = xv * yv
+
+                        xmin_a = int(max(0, i - sigma + 1))
+                        xmax_a = int(min(alpha.shape[0], i+sigma))
+                        ymin_a = int(max(0, j - sigma + 1))
+                        ymax_a = int(min(alpha.shape[1], j + sigma))
+
+                        xmin_k = int(max(0, 0 - (i - sigma + 1)))
+                        xmax_k = int(min(kernel.shape[0], kernel.shape[0] + alpha.shape[0]- (i + sigma)))
+                        ymin_k = int(max(0, 0 - (j - sigma + 1)))
+                        ymax_k = int(min(kernel.shape[1], kernel.shape[1] + alpha.shape[1]- (j + sigma)))
+
+                        alpha[xmin_a:xmax_a, ymin_a:ymax_a] = np.max([alpha[xmin_a:xmax_a, ymin_a:ymax_a], kernel[xmin_k:xmax_k, ymin_k:ymax_k]], axis=0)
+                        alpha = alpha.clip(max=1.0)
+
+            alpha /= np.max(alpha)
+            alpha = alpha[...,None]
+            canvas = ((1-alpha)*canvas + (alpha)*rgb_value)
+            canvas = canvas.astype(np.uint8)
 
         else:
             raise NotImplementedError('Unexpected args[2] in "{}"'.format(':'.join(args)))
@@ -58,6 +88,31 @@ def draw_borders(canvas, borders, *args):
 
     return canvas
 
+def fill_class_color(canvas, color, color_deviation, coordinates):
+
+    # Check if color is texture image or hexcode
+    if os.path.exists(color) and os.path.isfile(color):
+        texture = cv2.imread(color, cv2.IMREAD_COLOR)[:, :, ::-1]
+        # Check that texture is big enough --> resize to max
+        W, H = (np.shape(texture)[0], np.shape(texture)[1])
+        W_coord, H_coord = (np.max(coordinates[0]) - np.min(coordinates[0]), np.max(coordinates[1]) - np.min(coordinates[1]))
+        cv2.resize(texture, (max(W, W_coord), max(H, H_coord)), interpolation=cv2.INTER_CUBIC)
+        W, H = (max(W, W_coord), max(H, H_coord))
+
+        # Extract correct centerpiece of texture and add put on canvas
+        texture_center = (int(W/2), int(H/2))
+        coord_center = (np.min(coordinates[0]) + int(W_coord/2), np.min(coordinates[1]) + int(H_coord/2))
+        canvas[coordinates[0], coordinates[1], :] = texture[coordinates[0]-coord_center[0]+texture_center[0], coordinates[1]-coord_center[1]+texture_center[1]]
+
+        # Set RGB to texture center #TODO I didn't know what to do in this case, this is for coloring the centroid thingies
+        rgb = texture[texture_center[0], texture_center[1]]
+
+    else:
+        rgb = hex2rgb_arr(color)
+        rgb = np.clip(rgb + np.random.normal(0, color_deviation, rgb.shape), 0, 255).astype(np.uint8)
+        canvas[coordinates[0], coordinates[1], :] = rgb
+
+    return rgb, canvas
 
 parser = argparse.ArgumentParser(description='Generate some toy images of colored voronoy cells. Produces ground truth class labels, ground truth true class region masks and region count labels. Also outputs its parameterization for reproducibility.')
 # data generation
@@ -68,9 +123,9 @@ parser.add_argument('--min_centroids', '-mnc', type=int, default=5, help='minimu
 parser.add_argument('--max_centroids', '-mxc', type=int, default=10, help='maximum number of centroids to be scattered on the canvas.')
 parser.add_argument('--distance_metric', '-d', type=str, default='euclidean', help='the distance measure to use for knn. supports naming choices compatible for (parameter-free) sklearn.neighbors.DistanceMetric.')
 # drawing parameters
-parser.add_argument('--class_colors', '-cc', type=str, nargs='*', default='0xff0000', help='the colors for labelled classes as rgb hex strings. multiple namings possible. each color adds a class.')
+parser.add_argument('--class_colors', '-cc', type=str, nargs='*', default='0xff0000', help='the colors for labelled classes as rgb hex strings or valid paths to texture image. multiple namings possible. each color adds a class.')
 parser.add_argument('--class_color_deviation', '-ccd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in class color.')
-parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff', help='the colors for "background" tiles. each added color adds to the variation.')
+parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff', help='the colors or valid paths to texture image for "background" tiles. each added color adds to the variation.')
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
 parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
@@ -123,28 +178,24 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
     regions = np.zeros((args.size, args.size), dtype=np.int32)          # for cataloguing region labels for border computation
     class_area_ground_truth = np.zeros((args.size, args.size, 1), dtype=np.uint8)  # for cataloguing the ground truth region for the true class.
     count_ground_truth = centroids.shape[0]
+
     for c in np.arange(centroids.shape[0]):
-        # TODO: create and refactor out proper "region generator functions"
-        if c == k:
-            rgb = hex2rgb_arr(args.class_colors[clazz])
-            rgb = np.clip(rgb + np.random.normal(0, args.class_color_deviation, rgb.shape), 0, 255).astype(np.uint8)
-        else:
-            rgb = hex2rgb_arr(args.bg_colors[np.random.randint(low=0, high=len(args.bg_colors))])
-            rgb = np.clip(rgb + np.random.normal(0, args.bg_color_deviation, rgb.shape), 0, 255).astype(np.uint8)
-
+        # TODO: create and refactor out proper "region generator functions" --> DONE (?)
         I = np.where(assignments == c)[0]
-        canvas[COORDS[I,0], COORDS[I,1],:] = rgb
-        regions[COORDS[I,0], COORDS[I,1]] = c
         if c == k:
-            class_area_ground_truth[COORDS[I,0], COORDS[I,1]] = 255 # max rgb grayscale value
+            rgb, canvas = fill_class_color(canvas, args.class_colors[clazz], args.class_color_deviation, (COORDS[I, 0], COORDS[I, 1]))
+        else:
+            rgb, canvas = fill_class_color(canvas, args.bg_colors[np.random.randint(low=0, high=len(args.bg_colors))], args.bg_color_deviation, (COORDS[I, 0], COORDS[I, 1]))
+        regions[COORDS[I, 0], COORDS[I, 1]] = c
+        if c == k:
+            class_area_ground_truth[COORDS[I, 0], COORDS[I, 1]] = 255  # max rgb grayscale value
 
-        #paint markers?
+        # paint markers?
         if args.draw_markers:
             if args.marker_color == 'class':
-                canvas[centroids[c,0],centroids[c,1]] = (rgb*0.65 + np.zeros_like(rgb)*0.35).astype(np.uint8)
+                canvas[centroids[c, 0], centroids[c, 1]] = (rgb * 0.65 + np.zeros_like(rgb) * 0.35).astype(np.uint8)
             else:
-                canvas[centroids[c,0],centroids[c,1]] = hex2rgb_arr(args.marker_color)
-
+                canvas[centroids[c, 0], centroids[c, 1]] = hex2rgb_arr(args.marker_color)
 
     if not args.draw_borders.lower() == 'none':
         borders = (np.abs(sobel(regions, axis=0)) + np.abs(sobel(regions, axis=1)))  > 0
