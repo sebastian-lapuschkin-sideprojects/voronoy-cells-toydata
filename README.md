@@ -18,14 +18,11 @@ Required packages can be installed via `pip install -r requirements.txt`
 
 ## How to Use
 ```
-usage: main.py [-h] [--random_seed RANDOM_SEED] [--size SIZE] [--number NUMBER] [--min_centroids MIN_CENTROIDS] [--max_centroids MAX_CENTROIDS]
-               [--distance_metric DISTANCE_METRIC] [--class_colors [CLASS_COLORS [CLASS_COLORS ...]]] [--class_color_deviation CLASS_COLOR_DEVIATION]
-               [--bg_colors [BG_COLORS [BG_COLORS ...]]] [--bg_color_deviation BG_COLOR_DEVIATION] [--draw_markers] [--marker_color MARKER_COLOR] [--draw_lines]
-               [--line_color LINE_COLOR] [--line_dilation_iterations LINE_DILATION_ITERATIONS] [--line_erosion_iterations LINE_EROSION_ITERATIONS] [--show]
-               [--output OUTPUT]
+usage: main.py [-h] [--random_seed RANDOM_SEED] [--size SIZE] [--number NUMBER] [--min_centroids MIN_CENTROIDS] [--max_centroids MAX_CENTROIDS] [--distance_metric DISTANCE_METRIC] [--class_colors [CLASS_COLORS [CLASS_COLORS ...]]]
+               [--class_color_deviation CLASS_COLOR_DEVIATION] [--bg_colors [BG_COLORS [BG_COLORS ...]]] [--bg_color_deviation BG_COLOR_DEVIATION] [--draw_markers] [--marker_color MARKER_COLOR] [--draw_borders DRAW_BORDERS]
+               [--line_dilation_iterations LINE_DILATION_ITERATIONS] [--line_erosion_iterations LINE_EROSION_ITERATIONS] [--show] [--output OUTPUT]
 
-Generate some toy images of colored voronoy cells. Produces ground truth class labels, ground truth true class region masks and region count labels. Also outputs its
-parameterization for reproducibility.
+Generate some toy images of colored voronoy cells. Produces ground truth class labels, ground truth true class region masks and region count labels. Also outputs its parameterization for reproducibility.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -50,11 +47,9 @@ optional arguments:
                         the standard deviation (in rgb color steps) for possible deviations in background color.
   --draw_markers, -dm   set to draw (single pixel) markers for centroids.
   --marker_color MARKER_COLOR, -mc MARKER_COLOR
-                        the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000
-                        is black.
-  --draw_lines, -dl     draw dividing lines between regions?
-  --line_color LINE_COLOR, -lc LINE_COLOR
-                        color of lines dividing voronoy cells.
+                        the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.
+  --draw_borders DRAW_BORDERS, -db DRAW_BORDERS
+                        how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:stdev" to draw a gaussian-weighted "line"
   --line_dilation_iterations LINE_DILATION_ITERATIONS, -ldi LINE_DILATION_ITERATIONS
                         how often to binary dilate region boundaries? dilation is applied before erosion.
   --line_erosion_iterations LINE_EROSION_ITERATIONS, -lei LINE_EROSION_ITERATIONS
@@ -67,13 +62,18 @@ optional arguments:
 ## Example Data
 The following call
 ```
-python main.py --random_seed 0xc0ffee  --size 224  --number 6  --min_centroids 5  --max_centroids 10  --distance_metric chebyshev  --class_colors 0xff0000 0x00ff00 0x0000ff  --class_color_deviation 40  --bg_colors 0xeeeeee  --bg_color_deviation 5  --marker_color class  --draw_lines   --line_color 0x222222  --line_dilation_iterations 1  --line_erosion_iterations 1  --show   --output ./output_224
+python main.py -rs 0xc0ffee  -s 224  -n 6  -mnc 5  -mxc 10  -d chebyshev  -cc 0xff0000 0x00ff00 0x0000ff  -ccd 40  -bc 0xeeeeee  -bcd 7  -mc class  -db color:0xffffff:gaussian:1.5  -ldi 3 -lei 1  --show  -o ./output_224
 ```
-will generate some data containing 6 images of size 244x244 with 5 to 10 centroids each which are placed according to a random process initialized with the random seed `0xc0ffee`.
-The data will consist of three different classes, identified by the given class colors `0xff0000`, `0x00ff00`, `0x0000ff`, of which the color value (within a range of [0,255] per rgb color channel) might deviate with a standard deviation of 40 per class region.
-One region will be picked at random to be the class region, while the others will be considered as background and colored with `0xeeeeee` +- some standard deviation of 5.
-The specification of the marker color as "class" would draw the centroid location in a slightly darker hue than the region color, but has no effect here, since `--draw_markers` has not been set. Due to the setting of `--draw_lines` lines will be drawn with a line color of `0x222222`. After finding the edges between voronoy regions using a sobel operator, line pixels are post processed with one iteration each of binary dilation and erosion (where dilation iterations are always applied before erosion iterations).
-`--show` specifies that each generated sample is shown to the user. Generated data is then written to the specified output location, which contains the generated images, with one corresponding ground truth localization mask each, a file `labels.txt` containing the class labels and number of regions per sample, and a file `args.txt` ensuring repeatability of the function call.
+will generate some data containing `6` images of size `244x244` with `5` to `10` centroids each which are placed according to a random process initialized with the random seed `0xc0ffee`.
+The data will consist of three different classes, identified by the given class colors `0xff0000`, `0x00ff00`, `0x0000ff`, of which the color value (within a range of [0,255] per rgb color channel) might deviate with a standard deviation of `40` per class region.
+One region will be picked at random to be the class region, while the others will be considered as background and colored with `0xeeeeee` +- some standard deviation of `7`.
+The specification of the marker color as `class` via `-mc` would draw the centroid location in a slightly darker hue than the region color, but has no effect here, since `-dm` has not been set. Due to the setting of `-db color:0xffffff:gaussian:1.5` lines between colored regions will be drawn with a base line color of `0xffffff`. Note that `color` currently is the only base parameter for borders.
+After finding the edges between voronoy regions using a sobel operator, line pixels are post processed with `3` iterations of binary dilation and `1` iteration of binary erosion (where dilation iterations are always applied before erosion iterations).
+Te addendum `gaussian:1.5` specifies an application of gaussian blur with sigma `1.5` on the lines.
+The blur effect will be restricted to regions in close proximity of the border pixels, with an approximate range of `3*sigma`, i.e. covering approx. 99.75% of a single gaussian's range.
+This will maintain the original sharpness of the image near the center of the regions.
+Alpha-blending avoids the preference to high-density border regions
+`--show` specifies that each generated sample is shown to the user. Generated data is then written to the specified output (`-o`) location, which contains the generated images, with one corresponding ground truth localization mask each, a file `labels.txt` containing the class labels and number of regions per sample, and a file `args.txt` ensuring repeatability of the function call.
 
 The following images, with ground truth masks below, have been generated:
 
@@ -100,7 +100,7 @@ The content of `labels.txt`, describing one sample per line, is
 
 The final file generated by the script is `args.txt`, containing the complete configuration leading to the generation of above data:
 ```
---random_seed 0xc0ffee  --size 224  --number 6  --min_centroids 5  --max_centroids 10  --distance_metric chebyshev  --class_colors 0xff0000 0x00ff00 0x0000ff  --class_color_deviation 40  --bg_colors 0xeeeeee  --bg_color_deviation 5  --marker_color class  --draw_lines   --line_color 0x222222  --line_dilation_iterations 1  --line_erosion_iterations 1  --show   --output ./output_224
+--random_seed 0xc0ffee  --size 224  --number 6  --min_centroids 5  --max_centroids 10  --distance_metric chebyshev  --class_colors 0xff0000 0x00ff00 0x0000ff  --class_color_deviation 40  --bg_colors 0xeeeeee  --bg_color_deviation 7  --marker_color class  --draw_borders color:0xffffff:gaussian:1.5  --line_dilation_iterations 3  --line_erosion_iterations 1  --show   --output ./output_224
 ```
 
 This allows for a replication of the previous results by simply calling

@@ -1,6 +1,7 @@
 import os
 import copy
 import tqdm
+import copy
 import imageio
 import argparse
 import numpy as np
@@ -32,7 +33,6 @@ def draw_borders(canvas, borders, *args):
         elif args[2] == 'gaussian':
             sigma = 1 if len(args) <= 3 else float(args[3])
             # draw flat borders on canvas, then just apply gaussian blur.
-            #print(canvas[borders])
             tmp = copy.deepcopy(canvas)
             tmp[borders] = rgb_value
             for i in range(3):
@@ -40,9 +40,20 @@ def draw_borders(canvas, borders, *args):
 
             # re-localize blur effect by using alpha-weighting based on border map between totally blurred image and unblurred original
             # (ie soft-crop blurred regions by alpha-combining them.)
-            #alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
+            # restrict gaussian blob shape to elevantion of singular gaussian blob for alpha-recombination to avoid bias towards high-border-density regions
+            one_peak = np.zeros([2*3*int(sigma)+1]*2) # compute peak range wrt to stdeviation, to cover ~ 99.75% of the gaussian's influence
+            one_peak[one_peak.shape[0]//2, one_peak.shape[1]//2] = 1
+            one_peak_max = gaussian_filter(one_peak, sigma).max()
 
-            # build kernel weirdly so we can clip
+            alpha = gaussian_filter(borders.astype(np.float32), sigma)[..., None]
+            alpha = np.clip(alpha, a_min=0, a_max=one_peak_max)
+            alpha /= np.max(alpha)
+            canvas = ((1 - alpha) * canvas + (alpha) * tmp)
+            canvas = canvas.astype(np.uint8)
+
+        elif args[2] == 'linear':
+            # build kernel linearly --> sigma is number of pixels
+            sigma = 1 if len(args) <= 3 else float(args[3])
             alpha = np.zeros(borders.shape)
             for i in range(borders.shape[0]):
                 for j in range(borders.shape[1]):
@@ -66,16 +77,8 @@ def draw_borders(canvas, borders, *args):
 
             alpha /= np.max(alpha)
             alpha = alpha[...,None]
-
-            alpha /= np.max(alpha)
-
-            plt.imshow(alpha)
-            plt.show()
-
             canvas = ((1-alpha)*canvas + (alpha)*rgb_value)
             canvas = canvas.astype(np.uint8)
-
-
 
         else:
             raise NotImplementedError('Unexpected args[2] in "{}"'.format(':'.join(args)))
@@ -126,7 +129,7 @@ parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
 parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
-parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gauss:stdev" to draw a gaussian-weighted "line"')
+parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:<stdev>" to draw a gaussian-weighted "line"')
 parser.add_argument('--line_dilation_iterations', '-ldi', type=int, default=0, help='how often to binary dilate region boundaries? dilation is applied before erosion.')
 parser.add_argument('--line_erosion_iterations', '-lei', type=int, default=1, help='how often to binary erode region boundaries? erosion is applied after dilation.')
 # visualize while generating?
