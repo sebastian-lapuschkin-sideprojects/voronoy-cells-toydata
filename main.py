@@ -74,7 +74,7 @@ parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
 parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
-parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gauss:stdev" to draw a gaussian-weighted "line"')
+parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:<stdev>" to draw a gaussian-weighted "line"')
 parser.add_argument('--line_dilation_iterations', '-ldi', type=int, default=0, help='how often to binary dilate region boundaries? dilation is applied before erosion.')
 parser.add_argument('--line_erosion_iterations', '-lei', type=int, default=1, help='how often to binary erode region boundaries? erosion is applied after dilation.')
 # visualize while generating?
