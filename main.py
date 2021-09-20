@@ -38,7 +38,13 @@ def draw_borders(canvas, borders, *args):
 
             # re-localize blur effect by using alpha-weighting based on border map between totally blurred image and unblurred original
             # (ie soft-crop blurred regions by alpha-combining them.)
+            # restrict gaussian blob shape to elevantion of singular gaussian blob for alpha-recombination to avoid bias towards high-border-density regions
+            one_peak = np.zeros([2*3*int(sigma)+1]*2) # compute peak range wrt to stdeviation, to cover ~ 99.75% of the gaussian's influence
+            one_peak[one_peak.shape[0]//2, one_peak.shape[1]//2] = 1
+            one_peak_max = gaussian_filter(one_peak, sigma).max()
+
             alpha = gaussian_filter(borders.astype(np.float32), sigma)[...,None]
+            alpha = np.clip(alpha, a_min=0, a_max=one_peak_max)
             alpha /= np.max(alpha)
             canvas = ((1-alpha)*canvas + (alpha)*tmp)
             canvas = canvas.astype(np.uint8)
