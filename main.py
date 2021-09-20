@@ -210,21 +210,25 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
 
     #store for later
     data.append((canvas, class_area_ground_truth, clazz, count_ground_truth))
-
-    if args.show:
-        plt.imshow(canvas)
-        plt.show()
+    #
+    # if args.show:
+    #     plt.imshow(canvas)
+    #     plt.show()
 
 
 
 # write data
-if not os.path.isdir(args.output): os.makedirs(args.output)
+if not os.path.isdir(args.output):
+    os.makedirs(args.output)
 with open('{}/labels.txt'.format(args.output), 'wt') as f_labels:
     f_labels.write('# image_id true_class num_regions\n')
     iname_template = "{:0"+str(len(str(args.number-1)))+"d}"
     for i in tqdm.tqdm(range(len(data)), desc='writing data'):
         iname = iname_template.format(i)
-        imageio.imwrite('{}/{}.png'.format(args.output, iname), data[i][0])
+        plt.imshow(data[i][0])
+        plt.show()
+        #imageio.imwrite('{}/{}.png'.format(args.output, iname), data[i][0])
+        cv2.imwrite('{}/{}.png'.format(args.output, iname), data[i][0])
         imageio.imwrite('{}/{}_gt.png'.format(args.output, iname), data[i][1])
         f_labels.write('{} {} {}\n'.format(iname, data[i][2], data[i][3]))
 
