@@ -212,8 +212,6 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
         plt.imshow(canvas)
         plt.show()
 
-
-
 # write data
 if not os.path.isdir(args.output):
     os.makedirs(args.output)
