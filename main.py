@@ -1,5 +1,6 @@
 import os
 import tqdm
+import copy
 import imageio
 import argparse
 import numpy as np
@@ -30,7 +31,7 @@ def draw_borders(canvas, borders, *args):
         elif args[2] == 'gaussian':
             sigma = 1 if len(args) <= 3 else float(args[3])
             # draw flat borders on canvas, then just apply gaussian blur.
-            tmp = canvas
+            tmp = copy.deepcopy(canvas)
             tmp[borders] = rgb_value
             for i in range(3):
                 tmp[...,i] = gaussian_filter(tmp[...,i].astype(np.float32), sigma).astype(np.uint8)
