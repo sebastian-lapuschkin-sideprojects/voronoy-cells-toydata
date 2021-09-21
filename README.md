@@ -13,6 +13,7 @@ numpy==1.20.1
 matplotlib==3.3.4
 scipy==1.6.0
 scikit-learn==0.24.1
+opencv-python==4.5.2.52
 ```
 Required packages can be installed via `pip install -r requirements.txt`
 
@@ -38,18 +39,18 @@ optional arguments:
   --distance_metric DISTANCE_METRIC, -d DISTANCE_METRIC
                         the distance measure to use for knn. supports naming choices compatible for (parameter-free) sklearn.neighbors.DistanceMetric.
   --class_colors [CLASS_COLORS [CLASS_COLORS ...]], -cc [CLASS_COLORS [CLASS_COLORS ...]]
-                        the colors for labelled classes as rgb hex strings. multiple namings possible. each color adds a class.
+                        the colors for labelled classes as rgb hex strings or valid paths to texture images. multiple namings possible. each color adds a class.
   --class_color_deviation CLASS_COLOR_DEVIATION, -ccd CLASS_COLOR_DEVIATION
                         the standard deviation (in rgb color steps) for possible deviations in class color.
   --bg_colors [BG_COLORS [BG_COLORS ...]], -bc [BG_COLORS [BG_COLORS ...]]
-                        the colors for "background" tiles. each added color adds to the variation.
+                        the colors for "background" tiles or valid paths to texture images.. each added color adds to the variation.
   --bg_color_deviation BG_COLOR_DEVIATION, -bcd BG_COLOR_DEVIATION
                         the standard deviation (in rgb color steps) for possible deviations in background color.
   --draw_markers, -dm   set to draw (single pixel) markers for centroids.
   --marker_color MARKER_COLOR, -mc MARKER_COLOR
                         the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.
   --draw_borders DRAW_BORDERS, -db DRAW_BORDERS
-                        how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:stdev" to draw a gaussian-weighted "line"
+                        how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), "color:<hexcode>:gaussian:stdev" to draw a gaussian-weighted blur around the line, "color:<hexcode>:linear:n_pixels" to draw a linearly-weighted blur around the line
   --line_dilation_iterations LINE_DILATION_ITERATIONS, -ldi LINE_DILATION_ITERATIONS
                         how often to binary dilate region boundaries? dilation is applied before erosion.
   --line_erosion_iterations LINE_EROSION_ITERATIONS, -lei LINE_EROSION_ITERATIONS
@@ -107,3 +108,21 @@ This allows for a replication of the previous results by simply calling
 ```
 python main.py $(cat output_224/args.txt)
 ```
+Alternatively,
+```
+python main.py --random_seed 0xc0ffee  --size 128  --number 6  --min_centroids 5  --max_centroids 10  --distance_metric chebyshev  --class_colors ./example_textures/0d2576a86f0f71df4e1dac9b1545a2bc.jpg ./example_textures/1f00b3d571e19632f4c5b7153912e50b.jpg ./example_textures/54580fea7ced5fe901ec8f9c017573dc.jpg  --class_color_deviation 40  --bg_colors ./example_textures/1ad90240a7ee520bdeddcda935d3710a.jpg  --bg_color_deviation 7  --marker_color class  --draw_borders color:0xffffff:linear:30  --line_dilation_iterations 1  --line_erosion_iterations 1  --show   --output ./output-textures-linear  
+```
+will generate similar data, with textures instead of hex colors, size 128x128, and linear blur instead of gaussian blur. This example can be reproduced by calling
+```
+python main.py $(cat output-textures-linear/args.txt)
+```
+
+The following images, with ground truth masks below, have been generated:
+
+![output-textures-linear/0.png](output-textures-linear/0.png) ![output-textures-linear/1.png](output-textures-linear/1.png) ![output-textures-linear/2.png](output-textures-linear/2.png)
+
+![output-textures-linear/3.png](output-textures-linear/3.png) ![output-textures-linear/4.png](output-textures-linear/4.png) ![output-textures-linear/5.png](output-textures-linear/5.png)
+
+![output-textures-linear/0_gt.png](output-textures-linear/0_gt.png) ![output-textures-linear/1_gt.png](output-textures-linear/1_gt.png) ![output-textures-linear/2_gt.png](output-textures-linear/2_gt.png)
+
+![output-textures-linear/3_gt.png](output-textures-linear/3_gt.png) ![output-textures-linear/4_gt.png](output-textures-linear/4_gt.png) ![output-textures-linear/5_gt.png](output-textures-linear/5_gt.png)
