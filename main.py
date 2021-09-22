@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import sobel
 from scipy.ndimage import binary_erosion
 from scipy.ndimage import binary_dilation
-from scipy.ndimage import gaussian_filter, uniform_filter
+from scipy.ndimage import gaussian_filter
 from sklearn.neighbors import DistanceMetric
 
 
