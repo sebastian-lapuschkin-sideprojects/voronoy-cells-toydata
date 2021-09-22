@@ -108,21 +108,20 @@ This allows for a replication of the previous results by simply calling
 ```
 python main.py $(cat output_224/args.txt)
 ```
-Alternatively,
-```
-python main.py --random_seed 0xc0ffee  --size 128  --number 6  --min_centroids 5  --max_centroids 10  --distance_metric chebyshev  --class_colors ./example_textures/0d2576a86f0f71df4e1dac9b1545a2bc.jpg ./example_textures/1f00b3d571e19632f4c5b7153912e50b.jpg ./example_textures/54580fea7ced5fe901ec8f9c017573dc.jpg  --class_color_deviation 40  --bg_colors ./example_textures/1ad90240a7ee520bdeddcda935d3710a.jpg  --bg_color_deviation 7  --marker_color class  --draw_borders color:0xffffff:linear:30  --line_dilation_iterations 1  --line_erosion_iterations 1  --show   --output ./output-textures-linear  
-```
-will generate similar data, with textures instead of hex colors, size 128x128, and linear blur instead of gaussian blur. This example can be reproduced by calling
-```
-python main.py $(cat output-textures-linear/args.txt)
-```
 
-The following images, with ground truth masks below, have been generated:
+### Borders or no borders?
+The parameterization in [`output_224_noborders`](output_224_noborders/args.txt) demonstrates how the `--draw_borders` with a gaussian standard deviation of `10` instead of `1.5` can be used to remove any high contrast edges. Alterantively, setting `--draw_borders color:0x222222:flat` would draw hard borders of almost black color, without any additional post processing.
 
-![output-textures-linear/0.png](output-textures-linear/0.png) ![output-textures-linear/1.png](output-textures-linear/1.png) ![output-textures-linear/2.png](output-textures-linear/2.png)
+### Region texturing.
 
-![output-textures-linear/3.png](output-textures-linear/3.png) ![output-textures-linear/4.png](output-textures-linear/4.png) ![output-textures-linear/5.png](output-textures-linear/5.png)
+As an alternative to painting regions in flat colors, texturing is also supported by specifying a (relative) path to an image, instead of a hex code for colorization. Additionally the parmeterization in [`output_224_textured`](output_224_textured/../output_224/args.txt) demonstrates a further alternative for soft border parameterization via linear regression from the border center with a certain range, here `15`, by setting `--draw_borders with color:0x000000:linear:15`, based on euclidean distances to region centroids.
 
-![output-textures-linear/0_gt.png](output-textures-linear/0_gt.png) ![output-textures-linear/1_gt.png](output-textures-linear/1_gt.png) ![output-textures-linear/2_gt.png](output-textures-linear/2_gt.png)
+The following images, with ground truth masks below, have been generated (**TODO: random transformation support**):
 
-![output-textures-linear/3_gt.png](output-textures-linear/3_gt.png) ![output-textures-linear/4_gt.png](output-textures-linear/4_gt.png) ![output-textures-linear/5_gt.png](output-textures-linear/5_gt.png)
+![output_224_textured/0.png](output_224_textured/0.png) ![output_224_textured/1.png](output_224_textured/1.png) ![output_224_textured/2.png](output_224_textured/2.png)
+
+![output_224_textured/3.png](output_224_textured/3.png) ![output_224_textured/4.png](output_224_textured/4.png) ![output_224_textured/5.png](output_224_textured/5.png)
+
+![output_224_textured/0_gt.png](output_224_textured/0_gt.png) ![output_224_textured/1_gt.png](output_224_textured/1_gt.png) ![output_224_textured/2_gt.png](output_224_textured/2_gt.png)
+
+![output_224_textured/3_gt.png](output_224_textured/3_gt.png) ![output_224_textured/4_gt.png](output_224_textured/4_gt.png) ![output_224_textured/5_gt.png](output_224_textured/5_gt.png)
