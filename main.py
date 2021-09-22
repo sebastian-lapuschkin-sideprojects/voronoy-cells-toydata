@@ -1,4 +1,5 @@
 import os
+import cv2
 import copy
 import tqdm
 import copy
@@ -11,7 +12,6 @@ from scipy.ndimage import binary_erosion
 from scipy.ndimage import binary_dilation
 from scipy.ndimage import gaussian_filter, uniform_filter
 from sklearn.neighbors import DistanceMetric
-import cv2
 
 
 def hex2rgb_arr(hexcode):
