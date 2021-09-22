@@ -23,7 +23,7 @@ def draw_borders(canvas, borders, *args):
         # 0  - general type of border
         # 1  - border type parameter
         # 2: - application parameters
-    print('executing --draw_borders with {}'.format(':'.join(args)))
+    #print('executing --draw_borders with {}'.format(':'.join(args)))
     # this is dirty, but it works. for now. oh god is this ugly.
     if args[0] == 'color':
         rgb_value = hex2rgb_arr(args[1])
@@ -129,7 +129,7 @@ parser.add_argument('--bg_colors', '-bc', type=str, nargs='*', default='0xffffff
 parser.add_argument('--bg_color_deviation', '-bcd', type=int, default=10, help='the standard deviation (in rgb color steps) for possible deviations in background color.')
 parser.add_argument('--draw_markers', '-dm', action='store_true', help='set to draw (single pixel) markers for centroids.')
 parser.add_argument('--marker_color', '-mc', type=str, default='class', help='the color of centroid markers. "class" is a darker version of the class color. otherwise, rgb hex codes specify special color choices, e.g. 0x000000 is black.')
-parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:<stdev>" to draw a gaussian-weighted "line"')
+parser.add_argument('--draw_borders', '-db', type=str, default='none', help='how to draw draw dividing lines between regions? Options: "none", "color:<hexcode>:flat" (e.g. color:0x000000:flat for black lines), or "color:<hexcode>:gaussian:<stdev>" to draw a gaussian-weighted "line". Next to "gaussian" and "flat", there is the option to specify a "linear" regression with an additional following range parameter.')
 parser.add_argument('--line_dilation_iterations', '-ldi', type=int, default=0, help='how often to binary dilate region boundaries? dilation is applied before erosion.')
 parser.add_argument('--line_erosion_iterations', '-lei', type=int, default=1, help='how often to binary erode region boundaries? erosion is applied after dilation.')
 # visualize while generating?
@@ -140,8 +140,6 @@ parser.add_argument('--output', '-o', type=str, default='./output', help='output
 #TODO: enforce min distance between centroids?
 #TODO: pick colors from some nice palettes?
 #TODO: draw some more sensible markers?
-#TODO: refine line drawing, ie line thickness (scipy.ndimage.binary_erosion, scipy.ndimage.binary_dilation)
-    # TODO: explore dilation and erosion parameters
 
 args = parser.parse_args()
 if not isinstance(args.bg_colors, list): args.bg_colors = [args.bg_colors]
