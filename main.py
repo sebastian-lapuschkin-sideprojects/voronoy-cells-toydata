@@ -156,7 +156,8 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
                                  )
 
     # avoid duplicate centroid coordinates and thus empty class assignments for the non-first instances of identical centroids, thus crashes lateron.
-    centroids = np.unique(centroids, axis=0)
+    centroids, inverse_indices = np.unique(centroids, return_inverse=True,   axis=0)
+    centroids = centroids[inverse_indices,:]
 
     #compute 1-nn assignments on a canvas
     XX, YY = np.meshgrid(np.arange(0,args.size), np.arange(0,args.size))
