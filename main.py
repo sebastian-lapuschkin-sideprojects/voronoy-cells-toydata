@@ -155,6 +155,9 @@ for i in tqdm.tqdm(range(args.number), desc='generating samples'):
                                     size=(np.random.randint(low=args.min_centroids, high=args.max_centroids), 2)
                                  )
 
+    # avoid duplicate centroid coordinates and thus empty class assignments for the non-first instances of identical centroids, thus crashes lateron.
+    centroids = np.unique(centroids, axis=0)
+
     #compute 1-nn assignments on a canvas
     XX, YY = np.meshgrid(np.arange(0,args.size), np.arange(0,args.size))
     COORDS = np.concatenate([YY[None,...], XX[None,...]], axis=0).reshape(2,args.size**2).T
